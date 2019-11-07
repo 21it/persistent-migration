@@ -1,5 +1,6 @@
 resolver: lts-11.11
 install-ghc: true
+allow-newer: true
 
 packages:
 - .
