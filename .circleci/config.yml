@@ -135,7 +135,7 @@ workflows:
   nightly:
     triggers:
       - schedule:
-          cron: "0 8 * * *"  # midnight PST
+          cron: "0 5 * * *"  # 05:00 UTC
           filters:
             branches:
               only:
