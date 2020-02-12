@@ -7,4 +7,3 @@ packages:
 
 extra-deps:
 - tasty-golden-2.3.2
-- HsYAML-aeson-0.2.0.0@sha256:04796abfc01cffded83f37a10e6edba4f0c0a15d45bef44fc5bb4313d9c87757,1791
