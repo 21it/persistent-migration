@@ -1,4 +1,2 @@
 .DS_Store
 .stack-work/
-persistent-migration.cabal
-stack.yaml.lock
