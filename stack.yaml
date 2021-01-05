@@ -7,3 +7,4 @@ packages:
 
 extra-deps:
 - tasty-golden-2.3.2
+- persistent-2.11.0.2
