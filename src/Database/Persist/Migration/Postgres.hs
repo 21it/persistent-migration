@@ -1,28 +1,28 @@
-{-|
-Module      :  Database.Persist.Migration.Postgres
-Maintainer  :  Brandon Chinn <brandonchinn178@gmail.com>
-Stability   :  experimental
-Portability :  portable
-
-Defines the migration backend for PostgreSQL.
--}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ViewPatterns #-}
 
+-- |
+-- Module      :  Database.Persist.Migration.Postgres
+-- Maintainer  :  Brandon Chinn <brandonchinn178@gmail.com>
+-- Stability   :  experimental
+-- Portability :  portable
+--
+-- Defines the migration backend for PostgreSQL.
 module Database.Persist.Migration.Postgres
-  ( backend
-  , getMigration
-  , runMigration
-  ) where
+  ( backend,
+    getMigration,
+    runMigration,
+  )
+where
 
 import Data.Maybe (maybeToList)
 import Data.Text (Text)
 import qualified Data.Text as Text
 import Database.Persist.Migration
 import qualified Database.Persist.Migration.Core as Migration
-import Database.Persist.Sql (PersistValue, SqlPersistT, SqlType(..))
+import Database.Persist.Sql (SqlPersistT)
 
 -- | Run a migration with the Postgres backend.
 runMigration :: MigrateSettings -> Migration -> SqlPersistT IO ()
@@ -34,66 +34,69 @@ getMigration = Migration.getMigration backend
 
 -- | The migration backend for Postgres.
 backend :: MigrateBackend
-backend = MigrateBackend
-  { getMigrationSql = getMigrationSql'
-  }
+backend =
+  MigrateBackend
+    { getMigrationSql = getMigrationSql'
+    }
 
 getMigrationSql' :: Operation -> SqlPersistT IO [MigrateSql]
-
-getMigrationSql' CreateTable{..} = fromMigrateSql $ mapSql
-  (\sql -> Text.unwords ["CREATE TABLE IF NOT EXISTS", quote name, "(", sql, ")"])
-  $ concatSql uncommas tableDefs
+getMigrationSql' CreateTable {..} =
+  fromMigrateSql $
+    mapSql
+      (\sql -> Text.unwords ["CREATE TABLE IF NOT EXISTS", quote name, "(", sql, ")"])
+      $ concatSql uncommas tableDefs
   where
     tableDefs = map showColumn schema ++ map showTableConstraint constraints
-
-getMigrationSql' DropTable{..} = fromWords
-  ["DROP TABLE IF EXISTS", quote table]
-
-getMigrationSql' RenameTable{..} = fromWords
-  ["ALTER TABLE", quote from, "RENAME TO", quote to]
-
-getMigrationSql' AddConstraint{..} = fromWords
-  ["ALTER TABLE", quote table, statement]
+getMigrationSql' DropTable {..} =
+  fromWords
+    ["DROP TABLE IF EXISTS", quote table]
+getMigrationSql' RenameTable {..} =
+  fromWords
+    ["ALTER TABLE", quote from, "RENAME TO", quote to]
+getMigrationSql' AddConstraint {..} =
+  fromWords
+    ["ALTER TABLE", quote table, statement]
   where
     statement = case constraint of
       PrimaryKey cols -> Text.unwords ["ADD PRIMARY KEY (", uncommas' cols, ")"]
-      Unique label cols -> Text.unwords
-        ["ADD CONSTRAINT", quote label, "UNIQUE (", uncommas' cols, ")"]
-
-getMigrationSql' DropConstraint{..} = fromWords
-  ["ALTER TABLE", quote table, "DROP CONSTRAINT", constraintName]
-
-getMigrationSql' AddColumn{..} = return $ createQuery : maybeToList alterQuery
+      Unique label cols ->
+        Text.unwords
+          ["ADD CONSTRAINT", quote label, "UNIQUE (", uncommas' cols, ")"]
+getMigrationSql' DropConstraint {..} =
+  fromWords
+    ["ALTER TABLE", quote table, "DROP CONSTRAINT", constraintName]
+getMigrationSql' AddColumn {..} = return $ createQuery : maybeToList alterQuery
   where
-    Column{..} = column
+    Column {..} = column
     alterTable = Text.unwords ["ALTER TABLE", quote table]
     -- The CREATE query with the default specified by AddColumn{colDefault}
-    withoutDefault = showColumn $ column { colProps = filter (not . isDefault) colProps }
+    withoutDefault = showColumn $ column {colProps = filter (not . isDefault) colProps}
     createDefault = case colDefault of
       Nothing -> MigrateSql "" []
       Just def -> MigrateSql "DEFAULT ?" [def]
-    createQuery = concatSql
-      (\sqls -> Text.unwords $ [alterTable, "ADD COLUMN"] ++ sqls)
-      [withoutDefault, createDefault]
+    createQuery =
+      concatSql
+        (\sqls -> Text.unwords $ [alterTable, "ADD COLUMN"] ++ sqls)
+        [withoutDefault, createDefault]
     -- The ALTER query to drop/set the default (if colDefault was set)
     alterQuery =
       let action = case getDefault colProps of
             Nothing -> pureSql "DROP DEFAULT"
             Just v -> MigrateSql "SET DEFAULT ?" [v]
-          alterQuery' = mapSql
-            (\sql -> Text.unwords [alterTable, "ALTER COLUMN", quote colName, sql])
-            action
-      in alterQuery' <$ colDefault
-
-getMigrationSql' RenameColumn{..} = fromWords
-  ["ALTER TABLE", quote table, "RENAME COLUMN", quote from, "TO", quote to]
-
-getMigrationSql' DropColumn{..} = fromWords
-  ["ALTER TABLE", quote tab, "DROP COLUMN", quote col]
+          alterQuery' =
+            mapSql
+              (\sql -> Text.unwords [alterTable, "ALTER COLUMN", quote colName, sql])
+              action
+       in alterQuery' <$ colDefault
+getMigrationSql' RenameColumn {..} =
+  fromWords
+    ["ALTER TABLE", quote table, "RENAME COLUMN", quote from, "TO", quote to]
+getMigrationSql' DropColumn {..} =
+  fromWords
+    ["ALTER TABLE", quote tab, "DROP COLUMN", quote col]
   where
     (tab, col) = columnId
-
-getMigrationSql' RawOperation{..} = rawOp
+getMigrationSql' RawOperation {..} = rawOp
 
 {- Helpers -}
 
@@ -112,13 +115,14 @@ isDefault _ = False
 getDefault :: [ColumnProp] -> Maybe PersistValue
 getDefault [] = Nothing
 getDefault (Default v : _) = Just v
-getDefault (_:props) = getDefault props
+getDefault (_ : props) = getDefault props
 
 -- | Show a 'Column'.
 showColumn :: Column -> MigrateSql
-showColumn Column{..} = concatSql
-  (\sqls -> Text.unwords $ [quote colName, sqlType] ++ sqls)
-  $ map showColumnProp colProps
+showColumn Column {..} =
+  concatSql
+    (\sqls -> Text.unwords $ [quote colName, sqlType] ++ sqls)
+    $ map showColumnProp colProps
   where
     sqlType = case (AutoIncrement `elem` colProps, colType) of
       (True, SqlInt32) -> "SERIAL"
@@ -147,13 +151,16 @@ showSqlType = \case
 showColumnProp :: ColumnProp -> MigrateSql
 showColumnProp = \case
   NotNull -> pureSql "NOT NULL"
-  References (tab, col) -> pureSql $ Text.unwords
-    ["REFERENCES", quote tab, "(", quote col, ")"]
+  References (tab, col) ->
+    pureSql $
+      Text.unwords
+        ["REFERENCES", quote tab, "(", quote col, ")"]
   AutoIncrement -> pureSql ""
   Default v -> MigrateSql "DEFAULT ?" [v]
 
 -- | Show a `TableConstraint`.
 showTableConstraint :: TableConstraint -> MigrateSql
-showTableConstraint = pureSql . \case
-  PrimaryKey cols -> Text.unwords ["PRIMARY KEY (", uncommas' cols, ")"]
-  Unique name cols -> Text.unwords ["CONSTRAINT", quote name, "UNIQUE (", uncommas' cols, ")"]
+showTableConstraint =
+  pureSql . \case
+    PrimaryKey cols -> Text.unwords ["PRIMARY KEY (", uncommas' cols, ")"]
+    Unique name cols -> Text.unwords ["CONSTRAINT", quote name, "UNIQUE (", uncommas' cols, ")"]

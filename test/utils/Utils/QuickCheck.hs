@@ -4,42 +4,48 @@
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 
 module Utils.QuickCheck
-  ( CreateTable'(..)
-  , toOperation
-  , ColumnIdentifier(..)
-  , Identifier(..)
-  , genPersistValue
-  -- * Utilities
-  , DistinctList(..)
-  , mapSome
-  , group
-  ) where
+  ( CreateTable' (..),
+    toOperation,
+    ColumnIdentifier (..),
+    Identifier (..),
+    genPersistValue,
+
+    -- * Utilities
+    DistinctList (..),
+    mapSome,
+    group,
+  )
+where
 
 import Control.Monad ((>=>))
 import Data.ByteString (ByteString)
 import qualified Data.ByteString.Char8 as ByteString
 import Data.List (nub)
-import Data.Monoid ((<>))
 import Data.Text (Text)
 import qualified Data.Text as Text
 import qualified Data.Text.Encoding as Text
 import Data.Time.Calendar (Day, fromGregorian)
-import Data.Time.Clock (UTCTime(..), secondsToDiffTime)
-import Data.Time.LocalTime (TimeOfDay(..))
+import Data.Time.Clock (UTCTime (..), secondsToDiffTime)
+import Data.Time.LocalTime (TimeOfDay (..))
 import Database.Persist.Migration
-    (Column(..), ColumnProp(..), Operation(..), TableConstraint(..))
-import Database.Persist.Sql (PersistValue(..), SqlType(..))
+  ( Column (..),
+    ColumnProp (..),
+    Operation (..),
+    TableConstraint (..),
+  )
+import Database.Persist.Sql (PersistValue (..), SqlType (..))
 import Test.QuickCheck hiding (scale)
 
 -- | A duplicate of the CreateTable constructor for testing.
 data CreateTable' = CreateTable'
-  { ctName        :: Text
-  , ctSchema      :: [Column]
-  , ctConstraints :: [TableConstraint]
-  } deriving (Show)
+  { ctName :: Text,
+    ctSchema :: [Column],
+    ctConstraints :: [TableConstraint]
+  }
+  deriving (Show)
 
 toOperation :: CreateTable' -> Operation
-toOperation CreateTable'{..} = CreateTable ctName ctSchema ctConstraints
+toOperation CreateTable' {..} = CreateTable ctName ctSchema ctConstraints
 
 instance Arbitrary CreateTable' where
   arbitrary = do
@@ -56,7 +62,7 @@ instance Arbitrary CreateTable' where
     let tableNames' = filter (/= name) tableNames
     cols <- vectorOf (length colNames') $ genColumn tableNames'
     let idCol = Column "id" SqlInt32 [NotNull, AutoIncrement]
-        cols' = map (\(colName', col) -> col{colName = colName'}) $ zip colNames' cols
+        cols' = map (\(colName', col) -> col {colName = colName'}) $ zip colNames' cols
         ctSchema = idCol : cols'
 
     -- all of the columns that will be unique
@@ -64,17 +70,18 @@ instance Arbitrary CreateTable' where
     let mkUnique names =
           -- constraint name can be max 63 characters
           let namespace = Text.take 10 ctName
-              constraintName = Text.take 63 $ "unique_" <> Text.intercalate "_" (namespace:names)
-          in Unique constraintName names
+              constraintName = Text.take 63 $ "unique_" <> Text.intercalate "_" (namespace : names)
+           in Unique constraintName names
         -- unique constraints should not have more than 32 columns
-        max32 l = if length l > 32
-          then take 32 l : max32 (drop 32 l)
-          else [l]
+        max32 l =
+          if length l > 32
+            then take 32 l : max32 (drop 32 l)
+            else [l]
     uniqueConstraints <- map mkUnique . concatMap max32 <$> group uniqueCols
 
     let ctConstraints = PrimaryKey ["id"] : uniqueConstraints
 
-    return $ CreateTable'{..}
+    return $ CreateTable' {..}
 
 -- | Generate an arbitrary Column with a possibly pre-determined name.
 --
@@ -83,15 +90,17 @@ genColumn :: [Identifier] -> Gen Column
 genColumn tableNames = do
   colName <- fmap unColIdent arbitrary
 
-  references <- if null tableNames
-    then return []
-    else do
-      Identifier table <- elements tableNames
-      arbitrarySingleton 10 $ References (table, "id")
+  references <-
+    if null tableNames
+      then return []
+      else do
+        Identifier table <- elements tableNames
+        arbitrarySingleton 10 $ References (table, "id")
 
-  colType <- if null references
-    then arbitrary
-    else return SqlInt32
+  colType <-
+    if null references
+      then arbitrary
+      else return SqlInt32
 
   autoIncrement <- arbitrarySingleton 1 AutoIncrement
   notNull <- arbitrarySingleton 50 NotNull
@@ -101,7 +110,7 @@ genColumn tableNames = do
 
   let colProps = notNull ++ autoIncrement ++ references ++ colDefault
 
-  return Column{..}
+  return Column {..}
   where
     -- get list with x% chance of having the given element and (100 - x)% chance of
     -- being an empty list
@@ -110,19 +119,19 @@ genColumn tableNames = do
 instance Arbitrary Column where
   arbitrary = listOf arbitrary >>= genColumn
 
-newtype Identifier = Identifier { unIdent :: Text }
-  deriving (Show,Eq)
+newtype Identifier = Identifier {unIdent :: Text}
+  deriving (Show, Eq)
 
 instance Arbitrary Identifier where
   arbitrary = do
     first <- elements underletter
-    rest <- listOf $ elements $ underletter ++ ['0'..'9']
+    rest <- listOf $ elements $ underletter ++ ['0' .. '9']
     return . Identifier . Text.pack . take 63 $ first : rest
     where
-      underletter = '_':['a'..'z']
+      underletter = '_' : ['a' .. 'z']
 
-newtype ColumnIdentifier = ColumnIdentifier { unColIdent :: Text }
-  deriving (Show,Eq)
+newtype ColumnIdentifier = ColumnIdentifier {unColIdent :: Text}
+  deriving (Show, Eq)
 
 instance Arbitrary ColumnIdentifier where
   arbitrary = do
@@ -132,9 +141,15 @@ instance Arbitrary ColumnIdentifier where
       else return $ ColumnIdentifier ident
     where
       invalidIdents =
-        [ "id"
-        -- https://www.postgresql.org/docs/9.6/static/ddl-system-columns.html
-        , "oid", "tableoid", "xmin", "cmin", "xmax", "cmax", "ctid"
+        [ "id",
+          -- https://www.postgresql.org/docs/9.6/static/ddl-system-columns.html
+          "oid",
+          "tableoid",
+          "xmin",
+          "cmin",
+          "xmax",
+          "cmax",
+          "ctid"
         ]
 
 instance Arbitrary SqlType where
@@ -142,16 +157,16 @@ instance Arbitrary SqlType where
     numPrecision <- choose (1, 1000)
     numScale <- choose (0, numPrecision)
     elements
-      [ SqlString
-      , SqlInt32
-      , SqlInt64
-      , SqlReal
-      , SqlNumeric numPrecision numScale
-      , SqlBool
-      , SqlDay
-      , SqlTime
-      , SqlDayTime
-      , SqlBlob
+      [ SqlString,
+        SqlInt32,
+        SqlInt64,
+        SqlReal,
+        SqlNumeric numPrecision numScale,
+        SqlBool,
+        SqlDay,
+        SqlTime,
+        SqlDayTime,
+        SqlBlob
       ]
 
 -- | Generate an arbitrary PersistValue for the given SqlType.
@@ -160,7 +175,7 @@ genPersistValue = \case
   SqlString -> PersistText . Text.map cleanText <$> arbitrary
   SqlInt32 -> PersistInt64 <$> choose (-2147483648, 2147483647)
   SqlInt64 -> PersistInt64 <$> choose (-2147483648, 2147483647)
-  SqlReal -> PersistDouble . cleanDouble  <$> arbitrary
+  SqlReal -> PersistDouble . cleanDouble <$> arbitrary
   SqlNumeric precision scale -> do
     v <- choose (0, 1) :: Gen Double
     let v' = truncate (v * (10 ^ precision)) :: Integer
@@ -171,7 +186,7 @@ genPersistValue = \case
   SqlTime -> PersistTimeOfDay <$> arbitrary
   SqlDayTime -> PersistUTCTime <$> arbitrary
   SqlBlob -> PersistByteString . ByteString.map cleanText <$> arbitrary
-  SqlOther _ -> fail "SqlOther not supported"
+  SqlOther _ -> error "SqlOther not supported"
   where
     cleanDouble :: Double -> Double
     cleanDouble x = if isInfinite x || isNaN x then 0 else x
@@ -182,7 +197,7 @@ genPersistValue = \case
 
 {- Utilities -}
 
-newtype DistinctList a = DistinctList { unDistinctList :: [a] }
+newtype DistinctList a = DistinctList {unDistinctList :: [a]}
   deriving (Show)
 
 instance (Arbitrary a, Eq a) => Arbitrary (DistinctList a) where

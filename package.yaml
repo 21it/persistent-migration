@@ -28,7 +28,6 @@ when:
       - -Wincomplete-record-updates
       - -Wincomplete-uni-patterns
       - -Wnoncanonical-monad-instances
-      - -Wnoncanonical-monadfail-instances
 
 library:
   source-dirs: src

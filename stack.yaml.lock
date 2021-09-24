@@ -3,38 +3,10 @@
 # For more information, please see the documentation at:
 #   https://docs.haskellstack.org/en/stable/lock_files
 
-packages:
-- completed:
-    hackage: tasty-golden-2.3.2@sha256:0e62bb8ab4654824373e3a91561c5b7eeb86ccde1f3c3196ab53fd43cca14ef0,1846
-    pantry-tree:
-      size: 531
-      sha256: 2475151df8ab7d5130d61f53d86a83d3d2bbcc79bf38d9efdfb261c1d0901d30
-  original:
-    hackage: tasty-golden-2.3.2
-- completed:
-    hackage: persistent-2.11.0.2@sha256:fe6bcfd7ee67252f5f96fbee786bad846fcc2e7fe3afd4bff5ddc63ec33c4bf1,4735
-    pantry-tree:
-      size: 2099
-      sha256: 43d6b26fbd967351e11e4bd8bfa21cdc0b1a6292d3c5f3d6e047af8600497c9a
-  original:
-    hackage: persistent-2.11.0.2
-- completed:
-    hackage: persistent-postgresql-2.11.0.1@sha256:da66b35872b163f126f390542ea910a44c70a505b4d051f31cdbd3222ea288da,3006
-    pantry-tree:
-      size: 803
-      sha256: 4b373e738ae568325818cac393ae3e51143644b52e27a2177ec7631de88b1bdd
-  original:
-    hackage: persistent-postgresql-2.11.0.1
-- completed:
-    hackage: persistent-template-2.9.1.0@sha256:384dd25da7adfbeeb749252c227c6691ad31177c0b814891a5f987a50788f522,2898
-    pantry-tree:
-      size: 776
-      sha256: 644eb4bc1f47c53d0eaf9e5df75a650dc38df260e3600254886cab8dffeb854c
-  original:
-    hackage: persistent-template-2.9.1.0
+packages: []
 snapshots:
 - completed:
-    size: 524163
-    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/lts/14/25.yaml
-    sha256: 97548b4e927a8a862d4a203687ca18a3f5d2ae75b4b72c946fb29c17df1a5082
-  original: lts-14.25
+    size: 581696
+    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/nightly/2021/9/18.yaml
+    sha256: f5184f7aaede1ce0aa29ec8be072f916c3c1b1ba95772cc55cb6e1787fa0ef51
+  original: nightly-2021-09-18

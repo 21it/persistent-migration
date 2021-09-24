@@ -1,10 +1,10 @@
 cabal-version: 1.18
 
--- This file has been generated from package.yaml by hpack version 0.31.2.
+-- This file has been generated from package.yaml by hpack version 0.34.4.
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: ffea3dfb59501af2959a9e420714d0a797038ec6d4b9c6989315b78d2a617f1a
+-- hash: 76c8659242932a6a0f4ceba2c6226a05403c0696ef4ad81aa24dac083778b207
 
 name:           persistent-migration
 version:        0.1.0
@@ -39,7 +39,6 @@ library
       Database.Persist.Migration.Operation
       Database.Persist.Migration.Operation.Types
       Database.Persist.Migration.Postgres
-      Database.Persist.Migration.Utils.Data
       Database.Persist.Migration.Utils.Plan
       Database.Persist.Migration.Utils.Sql
   other-modules:
@@ -59,7 +58,7 @@ library
   if flag(dev)
     ghc-options: -Werror
   if impl(ghc >= 8.0)
-    ghc-options: -Wcompat -Wincomplete-record-updates -Wincomplete-uni-patterns -Wnoncanonical-monad-instances -Wnoncanonical-monadfail-instances
+    ghc-options: -Wcompat -Wincomplete-record-updates -Wincomplete-uni-patterns -Wnoncanonical-monad-instances
   default-language: Haskell2010
 
 test-suite persistent-migration-integration
@@ -100,7 +99,7 @@ test-suite persistent-migration-integration
   if flag(dev)
     ghc-options: -Werror
   if impl(ghc >= 8.0)
-    ghc-options: -Wcompat -Wincomplete-record-updates -Wincomplete-uni-patterns -Wnoncanonical-monad-instances -Wnoncanonical-monadfail-instances
+    ghc-options: -Wcompat -Wincomplete-record-updates -Wincomplete-uni-patterns -Wnoncanonical-monad-instances
   default-language: Haskell2010
 
 test-suite persistent-migration-test
@@ -134,5 +133,5 @@ test-suite persistent-migration-test
   if flag(dev)
     ghc-options: -Werror
   if impl(ghc >= 8.0)
-    ghc-options: -Wcompat -Wincomplete-record-updates -Wincomplete-uni-patterns -Wnoncanonical-monad-instances -Wnoncanonical-monadfail-instances
+    ghc-options: -Wcompat -Wincomplete-record-updates -Wincomplete-uni-patterns -Wnoncanonical-monad-instances
   default-language: Haskell2010

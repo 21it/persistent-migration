@@ -1,12 +1,12 @@
-- hometown: 1
-  gender: Female
+- gender: Female
   name: Alice
   colorblind: false
-- hometown: 1
-  gender: Male
+  hometown: 1
+- gender: Male
   name: Bob
   colorblind: true
-- hometown: 1
-  gender: null
+  hometown: 1
+- gender: null
   name: Courtney
   colorblind: false
+  hometown: 1

@@ -1,11 +1,3 @@
-{-|
-Module      :  Database.Persist.Migration.Core
-Maintainer  :  Brandon Chinn <brandonchinn178@gmail.com>
-Stability   :  experimental
-Portability :  portable
-
-Defines a migration framework for the persistent library.
--}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE ExistentialQuantification #-}
 {-# LANGUAGE FlexibleContexts #-}
@@ -16,44 +8,52 @@ Defines a migration framework for the persistent library.
 {-# LANGUAGE RecordWildCards #-}
 {-# OPTIONS_GHC -fno-warn-redundant-constraints #-}
 
+-- |
+-- Module      :  Database.Persist.Migration.Core
+-- Maintainer  :  Brandon Chinn <brandonchinn178@gmail.com>
+-- Stability   :  experimental
+-- Portability :  portable
+--
+-- Defines a migration framework for the persistent library.
 module Database.Persist.Migration.Core
-  ( Version
-  , OperationPath
-  , (~>)
-  , Migration
-  , MigrationPath(..)
-  , opPath
-  , MigrateSettings(..)
-  , defaultSettings
-  , validateMigration
-  , runMigration
-  , getMigration
-  ) where
+  ( Version,
+    OperationPath,
+    (~>),
+    Migration,
+    MigrationPath (..),
+    opPath,
+    MigrateSettings (..),
+    defaultSettings,
+    validateMigration,
+    runMigration,
+    getMigration,
+  )
+where
 
 import Control.Monad (unless, when)
-import Control.Monad.IO.Class (MonadIO(..))
+import Control.Monad.IO.Class (MonadIO (..))
 import Control.Monad.Reader (mapReaderT)
 import Data.List (nub)
 import Data.Maybe (fromMaybe)
 import qualified Data.Text as Text
 import Data.Time.Clock (getCurrentTime)
-import Database.Persist.Migration.Backend (MigrateBackend(..))
-import Database.Persist.Migration.Operation (Operation(..), validateOperation)
+import Database.Persist.Migration.Backend (MigrateBackend (..))
+import Database.Persist.Migration.Operation (Operation (..), validateOperation)
 import Database.Persist.Migration.Operation.Types
-  ( Column(..)
-  , ColumnProp(..)
-  , TableConstraint(..)
+  ( Column (..),
+    ColumnProp (..),
+    TableConstraint (..),
   )
 import Database.Persist.Migration.Utils.Plan (getPath)
 import Database.Persist.Migration.Utils.Sql (MigrateSql, executeSql)
 import Database.Persist.Sql
-  ( PersistValue(..)
-  , Single(..)
-  , SqlPersistT
-  , rawExecute
-  , rawSql
+  ( PersistValue (..),
+    Single (..),
+    SqlPersistT,
+    rawExecute,
+    rawSql,
   )
-import Database.Persist.Types (SqlType(..))
+import Database.Persist.Types (SqlType (..))
 
 -- | The version of a database. An operation migrates from the given version to another version.
 --
@@ -76,8 +76,8 @@ type Migration = [MigrationPath]
 
 -- | A path representing the operations needed to run to get from one version of the database schema
 -- to the next.
-data MigrationPath =
-  OperationPath := [Operation]
+data MigrationPath
+  = OperationPath := [Operation]
   deriving (Show)
 
 -- | Get the OperationPath in the MigrationPath.
@@ -86,23 +86,23 @@ opPath (path := _) = path
 
 -- | Get the current version of the database, or Nothing if none exists.
 getCurrVersion :: MonadIO m => MigrateBackend -> SqlPersistT m (Maybe Version)
-getCurrVersion backend
+getCurrVersion backend =
   -- create the persistent_migration table if it doesn't already exist
- = do
-  mapReaderT liftIO (getMigrationSql backend migrationSchema) >>=
-    mapM_ executeSql
-  extractVersion <$> rawSql queryVersion []
+  do
+    mapReaderT liftIO (getMigrationSql backend migrationSchema)
+      >>= mapM_ executeSql
+    extractVersion <$> rawSql queryVersion []
   where
     migrationSchema =
       CreateTable
-        { name = "persistent_migration"
-        , schema =
-            [ Column "id" SqlInt32 [NotNull, AutoIncrement]
-            , Column "version" SqlInt32 [NotNull]
-            , Column "label" SqlString []
-            , Column "timestamp" SqlDayTime [NotNull]
-            ]
-        , constraints = [PrimaryKey ["id"]]
+        { name = "persistent_migration",
+          schema =
+            [ Column "id" SqlInt32 [NotNull, AutoIncrement],
+              Column "version" SqlInt32 [NotNull],
+              Column "label" SqlString [],
+              Column "timestamp" SqlDayTime [NotNull]
+            ],
+          constraints = [PrimaryKey ["id"]]
         }
     queryVersion =
       "SELECT version FROM persistent_migration ORDER BY timestamp DESC LIMIT 1"
@@ -114,7 +114,7 @@ getCurrVersion backend
 
 -- | Get the list of operations to run, given the current state of the database.
 getOperations ::
-     Migration -> Maybe Version -> Either (Version, Version) [Operation]
+  Migration -> Maybe Version -> Either (Version, Version) [Operation]
 getOperations migration mVersion =
   case getPath edges start end of
     Just path -> Right $ concat path
@@ -133,12 +133,12 @@ getLatestVersion :: Migration -> Version
 getLatestVersion = maximum . map (snd . opPath)
 
 {- Migration plan and execution -}
+
 -- | Settings to customize migration steps.
-newtype MigrateSettings =
-  MigrateSettings
-    { versionToLabel :: Version -> Maybe String
-      -- ^ A function to optionally label certain versions
-    }
+newtype MigrateSettings = MigrateSettings
+  { -- | A function to optionally label certain versions
+    versionToLabel :: Version -> Maybe String
+  }
 
 -- | Default migration settings.
 defaultSettings :: MigrateSettings
@@ -158,11 +158,11 @@ validateMigration migration = do
 
 -- | Run the given migration. After successful completion, saves the migration to the database.
 runMigration ::
-     MonadIO m
-  => MigrateBackend
-  -> MigrateSettings
-  -> Migration
-  -> SqlPersistT m ()
+  MonadIO m =>
+  MigrateBackend ->
+  MigrateSettings ->
+  Migration ->
+  SqlPersistT m ()
 runMigration backend settings@MigrateSettings {..} migration = do
   currVersion <- maybe (-1) id <$> getCurrVersion backend
   let latestVersion = getLatestVersion migration
@@ -171,28 +171,28 @@ runMigration backend settings@MigrateSettings {..} migration = do
     now <- liftIO getCurrentTime
     rawExecute
       "INSERT INTO persistent_migration(version, label, timestamp) VALUES (?, ?, ?)"
-      [ PersistInt64 $ fromIntegral latestVersion
-      , PersistText $
-        Text.pack $
-        fromMaybe (show latestVersion) $ versionToLabel latestVersion
-      , PersistUTCTime now
+      [ PersistInt64 $ fromIntegral latestVersion,
+        PersistText $
+          Text.pack $
+            fromMaybe (show latestVersion) $ versionToLabel latestVersion,
+        PersistUTCTime now
       ]
 
 -- | Get the SQL queries for the given migration.
 getMigration ::
-     MonadIO m
-  => MigrateBackend
-  -> MigrateSettings
-  -> Migration
-  -> SqlPersistT m [MigrateSql]
+  MonadIO m =>
+  MigrateBackend ->
+  MigrateSettings ->
+  Migration ->
+  SqlPersistT m [MigrateSql]
 getMigration backend _ migration = do
-  either fail return $ validateMigration migration
+  either error return $ validateMigration migration
   currVersion <- getCurrVersion backend
   operations <- either badPath return $ getOperations migration currVersion
-  either fail return $ mapM_ validateOperation operations
+  either error return $ mapM_ validateOperation operations
   concatMapM (mapReaderT liftIO . getMigrationSql backend) operations
   where
     badPath (start, end) =
-      fail $ "Could not find path: " ++ show start ++ " ~> " ++ show end
+      error $ "Could not find path: " ++ show start ++ " ~> " ++ show end
     -- Utilities
     concatMapM f = fmap concat . mapM f

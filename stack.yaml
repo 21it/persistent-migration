@@ -1,12 +1,6 @@
-resolver: lts-14.27
-install-ghc: true
-allow-newer: true
-
+resolver: nightly-2021-09-18
+system-ghc: true
+allow-different-user: true
 packages:
-- .
-
+  - .
 extra-deps:
-- tasty-golden-2.3.2
-- persistent-2.11.0.2
-- persistent-postgresql-2.11.0.1
-- persistent-template-2.9.1.0
