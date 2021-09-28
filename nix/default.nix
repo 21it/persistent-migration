@@ -5,8 +5,7 @@ in
     overlays = import ./overlay.nix {
 
     };
-  },
-  doCheck ? true
+  }
 }:
 with pkgs;
 
@@ -16,7 +15,6 @@ let callPackage = lib.callPackageWith haskellPackages;
     testDeps = [ postgresql_13 ];
 in
   haskell.lib.overrideCabal pkg (drv: {
-    inherit doCheck;
     setupHaskellDepends =
       if drv ? "setupHaskellDepends"
       then drv.setupHaskellDepends ++ systemDeps
@@ -29,6 +27,7 @@ in
     enableSharedExecutables = false;
     enableLibraryProfiling = false;
     isLibrary = true;
+    doCheck = true;
     doHaddock = false;
     prePatch = "hpack --force";
   })

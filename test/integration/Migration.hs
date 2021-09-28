@@ -25,7 +25,8 @@ import Data.ByteString.Lazy (ByteString, fromStrict)
 import Data.Maybe (mapMaybe)
 import Data.Pool (Pool)
 import Data.Text (Text)
-import Data.Yaml (array, encode, object, (.=))
+import Data.Yaml (array, object, (.=))
+import Data.Yaml.Pretty (defConfig, encodePretty, setConfCompare)
 import Database.Persist (Entity (..), get, insertKey, insertMany_, selectList)
 import Database.Persist.Migration
 import Database.Persist.Sql
@@ -227,8 +228,13 @@ testMigration dir backend getPool name n populateDb = goldenVsString dir name $ 
 
 -- | Display a Person as a YAML object.
 showPersons :: [Person] -> ByteString
-showPersons = fromStrict . encode . array . map showPerson
+showPersons =
+  fromStrict
+    . encodePretty cfg
+    . array
+    . map showPerson
   where
+    cfg = setConfCompare (flip compare) defConfig
     showPerson Person {..} =
       object
         [ "name" .= personName,

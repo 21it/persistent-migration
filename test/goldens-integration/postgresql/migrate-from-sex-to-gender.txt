@@ -1,24 +1,24 @@
-- gender: null
-  name: Foster
-  colorblind: false
+- name: Foster
   hometown: 1
-- gender: Male
-  name: David
+  gender: null
   colorblind: false
+- name: David
   hometown: 1
-- gender: Female
-  name: Elizabeth
+  gender: Male
   colorblind: false
+- name: Elizabeth
   hometown: 1
-- gender: Female
-  name: Alice
+  gender: Female
   colorblind: false
+- name: Alice
   hometown: 1
-- gender: Male
-  name: Bob
+  gender: Female
+  colorblind: false
+- name: Bob
+  hometown: 1
+  gender: Male
   colorblind: true
+- name: Courtney
   hometown: 1
-- gender: null
-  name: Courtney
+  gender: null
   colorblind: false
-  hometown: 1
